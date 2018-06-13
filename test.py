@@ -2,8 +2,9 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import gzip
-
+import math
 from tensorflow.python.data import Dataset
+from sklearn import metrics
 
 #converts header values
 def convert_header(header, index):
@@ -90,10 +91,20 @@ if __name__ == "__main__":
         steps=100
     )
 
-    eval_result = dnn_classifier.evaluate(
-        input_fn=lambda: input_function(testing_features, testing_targets))
+    logger('Predictions')
+    predictions = dnn_classifier.predict(
+        input_fn = lambda: input_function(training_features, training_targets)
+    )
+    print predictions
+    predictions = np.array([item['predictions'][0] for item in predictions])
+    mean_squared_error = metrics.mean_squared_error(predictions, training_targets)
+    root_mean_squared_error = math.sqrt(mean_squared_error)
+    print "Mean Squared Error (on training data): %0.3f" % mean_squared_error
+    print "Root Mean Squared Error (on training data): %0.3f" % root_mean_squared_error
 
-    print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
+    #eval_result = dnn_classifier.evaluate(
+    #    input_fn=lambda: input_function(testing_features, testing_targets))
+    #print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
 
 
 
