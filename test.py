@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import gzip
-import math
+import matplotlib.pyplot as plt
 from tensorflow.python.data import Dataset
 from sklearn import metrics
 
@@ -27,7 +27,7 @@ def load_features(filename, size):
         data = np.frombuffer(data, dtype=np.uint8)
         data = data.reshape(num_images, IMAGE_SIZE*IMAGE_SIZE)
         data = np.array(data)
-        data = data.astype(np.int32)
+        data = data.astype(np.float32)
         data = data[0:size]
         data = data/255
         features = { "image": data}
@@ -66,26 +66,34 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
     features, labels = ds.make_one_shot_iterator().get_next()
     return features, labels
 
-def logger(text):
-    print 'LOG:'+text
-
 if __name__ == "__main__":
 
-    training_features = load_features('train-images-idx3-ubyte.gz', 10000)
-    training_targets = load_labels('train-labels-idx1-ubyte.gz', 10000)
-    logger('Training data imported')
+    training_features = load_features('train-images-idx3-ubyte.gz', 1000)
+    training_targets = load_labels('train-labels-idx1-ubyte.gz', 1000)
+    print 'Training data imported'
 
     testing_features = load_features('t10k-images-idx3-ubyte.gz', 100)
     testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', 100)
-    logger('Testing data imported')
+    print 'Testing data imported'
 
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
 
-    logger('Setting up classifier')
-    dnn_classifier = tf.estimator.DNNClassifier(
-        feature_columns=feature_columns,
+    training_input_fn = lambda: input_function(training_features, training_targets)
+    testing_input_fn = lambda: input_function(testing_features, testing_targets)
+
+    print 'Setting up classifier'
+    # dnn_classifier = tf.estimator.DNNClassifier(
+    #     feature_columns=feature_columns,
+    #     n_classes=10,
+    #     hidden_units=[10,10],
+    #     optimizer=tf.train.ProximalAdagradOptimizer(
+    #         learning_rate=0.001,
+    #     )
+    # )
+
+    dnn_classifier = tf.estimator.LinearClassifier(
+        feature_columns = feature_columns,
         n_classes=10,
-        hidden_units=[10,10],
         optimizer=tf.train.ProximalAdagradOptimizer(
             learning_rate=0.01,
         )
@@ -96,61 +104,20 @@ if __name__ == "__main__":
         print 'RUN: ',i+1
         print '------------------------'
         start_time = time.time()
-        logger('Training classifier')
         _ = dnn_classifier.train(
-            input_fn = lambda: input_function(training_features, training_targets),
+            input_fn = training_input_fn,
             steps=50,
         )
         end_time = time.time()
-        print 'Time: ', end_time - start_time,'\n'
+        print 'Training classifier: ', end_time - start_time
 
-        start_time = time.time()
-        logger('Evaluating classifier for Training Data')
-        metrics = dnn_classifier.evaluate(
-            input_fn= lambda: input_function(training_features, training_targets),
-            steps=100
-        )
-        end_time = time.time()
-        print 'Time: ', end_time - start_time, '\n'
+        metrics = dnn_classifier.evaluate(input_fn= training_input_fn, steps=50)
+        print('Training set accuracy: {accuracy:0.3f}'.format(**metrics))
 
-        logger('Metrics for Training Data')
-        for m in metrics:
-            print m, metrics[m]
-        print "---"
+        metrics = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
+        print('Training test accuracy: {accuracy:0.3f}'.format(**metrics))
 
-        logger('Evaluating classifier for Training Data')
-        metrics = dnn_classifier.evaluate(
-            input_fn=lambda: input_function(training_features, training_targets),
-            steps=100
-        )
 
-    logger('Metrics for Testing Data')
-    for m in metrics:
-        print m, metrics[m]
-    print "---"
-
-    # logger('Predictions for Training Data')
-    # predictions = dnn_classifier.predict(
-    #     input_fn = lambda: input_function(training_features, training_targets)
-    # )
-
-    #print predictions['probabilities']
-
-    # logger('Predictions for Testing Data')
-    # predictions = dnn_classifier.predict(
-    #     input_fn=lambda: input_function(testing_features, testing_targets)
-    # )
-    #
-    # print predictions['probabilities']
-    # predictions = np.array([item['predictions'][0] for item in predictions])
-    # mean_squared_error = metrics.mean_squared_error(predictions, training_targets)
-    # root_mean_squared_error = math.sqrt(mean_squared_error)
-    # print "Mean Squared Error (on training data): %0.3f" % mean_squared_error
-    # print "Root Mean Squared Error (on training data): %0.3f" % root_mean_squared_error
-
-    #eval_result = dnn_classifier.evaluate(
-    #    input_fn=lambda: input_function(testing_features, testing_targets))
-    #print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
 
 
 
