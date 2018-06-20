@@ -87,7 +87,7 @@ if __name__ == "__main__":
     #     n_classes=10,
     #     hidden_units=[10,10],
     #     optimizer=tf.train.ProximalAdagradOptimizer(
-    #         learning_rate=0.001,
+    #         learning_rate=0.005,
     #     )
     # )
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         feature_columns = feature_columns,
         n_classes=10,
         optimizer=tf.train.ProximalAdagradOptimizer(
-            learning_rate=0.01,
+            learning_rate=0.005,
         )
     )
 
@@ -116,13 +116,15 @@ if __name__ == "__main__":
 
         metrics = dnn_classifier.evaluate(input_fn= training_input_fn, steps=50)
         print('Training set accuracy: {accuracy:0.3f}'.format(**metrics))
-        np.append(training_targets, '{accuracy:0.3f}'.format(**metrics))
+        training_accuracy = np.append(training_accuracy, metrics['accuracy'])
 
         metrics = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
         print('Training test accuracy: {accuracy:0.3f}'.format(**metrics))
-        np.append(testing_targets, '{accuracy:0.3f}'.format(**metrics))
+        testing_accuracy = np.append(testing_accuracy, metrics['accuracy'])
 
-    print training_targets
-    print testing_targets
+    training_line = plt.plot(training_accuracy, label="Training")
+    testing_line = plt.plot(testing_accuracy, label="Testing")
+    plt.legend()
+    plt.show()
 
-
+    # make graph that print accuracy of each class
