@@ -99,6 +99,9 @@ if __name__ == "__main__":
         )
     )
 
+    training_accuracy = []
+    testing_accuracy = []
+
     for i in range(0,10):
         print '------------------------'
         print 'RUN: ',i+1
@@ -113,11 +116,13 @@ if __name__ == "__main__":
 
         metrics = dnn_classifier.evaluate(input_fn= training_input_fn, steps=50)
         print('Training set accuracy: {accuracy:0.3f}'.format(**metrics))
+        np.append(training_targets, '{accuracy:0.3f}'.format(**metrics))
 
         metrics = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
         print('Training test accuracy: {accuracy:0.3f}'.format(**metrics))
+        np.append(testing_targets, '{accuracy:0.3f}'.format(**metrics))
 
-
-
+    print training_targets
+    print testing_targets
 
 
