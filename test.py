@@ -80,6 +80,7 @@ if __name__ == "__main__":
 
     training_input_fn = lambda: input_function(training_features, training_targets)
     testing_input_fn = lambda: input_function(testing_features, testing_targets)
+    prediction_input_fn = lambda: input_function(testing_features, testing_targets,num_epochs=1, shuffle=False)
 
     print 'Setting up classifier'
     # dnn_classifier = tf.estimator.DNNClassifier(
@@ -126,5 +127,18 @@ if __name__ == "__main__":
     testing_line = plt.plot(testing_accuracy, label="Testing")
     plt.legend()
     plt.show()
+
+    # predictions = dnn_classifier.predict(input_fn = testing_input_fn)
+    # for m in predictions:
+    #     print predictions[m]
+
+    predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
+    for i, p in enumerate(predictions):
+        print("Prediction : {}, Probablities : {}".format(p["classes"], p["probabilities"]))
+
+    mean_squared_error = metrics.mean_squared_error(predictions, testing_targets)
+    root_mean_squared_error = tf.math.sqrt(mean_squared_error)
+    print "Mean Squared Error (on training data): %0.3f" % mean_squared_error
+    print "Root Mean Squared Error (on training data): %0.3f" % root_mean_squared_error
 
     # make graph that print accuracy of each class
