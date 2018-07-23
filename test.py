@@ -50,7 +50,6 @@ def load_labels(filename, size):
 
     return labels
 
-
 # input function used with dnn_classifier
 def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=None):
 
@@ -68,12 +67,12 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
 
 if __name__ == "__main__":
 
-    training_features = load_features('train-images-idx3-ubyte.gz', 1000)
-    training_targets = load_labels('train-labels-idx1-ubyte.gz', 1000)
+    training_features = load_features('train-images-idx3-ubyte.gz', 100)
+    training_targets = load_labels('train-labels-idx1-ubyte.gz', 100)
     print 'Training data imported'
 
-    testing_features = load_features('t10k-images-idx3-ubyte.gz', 100)
-    testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', 100)
+    testing_features = load_features('t10k-images-idx3-ubyte.gz', 50)
+    testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', 50)
     print 'Testing data imported'
 
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
@@ -103,7 +102,7 @@ if __name__ == "__main__":
     training_accuracy = []
     testing_accuracy = []
 
-    for i in range(0,10):
+    for i in range(0,2):
         print '------------------------'
         print 'RUN: ',i+1
         print '------------------------'
@@ -128,17 +127,19 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    # predictions = dnn_classifier.predict(input_fn = testing_input_fn)
-    # for m in predictions:
-    #     print predictions[m]
-
+    class_accuracy = [[0,0,0,0,0,0,0,0,0,0]]*10
     predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
     for i, p in enumerate(predictions):
-        print("Prediction : {}, Probablities : {}".format(p["classes"], p["probabilities"]))
+        #print("Prediction : {}, Probablities : {}".format(p["classes"], p["probabilities"]))
+        current_class = int(p["classes"][0])
+        #class_accuracy[current_class] = np.sum((class_accuracy[current_class], 100), axis=0)
+        class_accuracy[current_class] = np.sum((class_accuracy[current_class], p["probabilities"]), axis=0)
 
-    mean_squared_error = metrics.mean_squared_error(predictions, testing_targets)
-    root_mean_squared_error = tf.math.sqrt(mean_squared_error)
-    print "Mean Squared Error (on training data): %0.3f" % mean_squared_error
-    print "Root Mean Squared Error (on training data): %0.3f" % root_mean_squared_error
+    print class_accuracy
+    # mean_squared_error = metrics.mean_squared_error(predictions, testing_targets)
+    # root_mean_squared_error = tf.math.sqrt(mean_squared_error)
+    # print "Mean Squared Error (on training data): %0.3f" % mean_squared_error
+    # print "Root Mean Squared Error (on training data): %0.3f" % root_mean_squared_error
 
     # make graph that print accuracy of each class
+    # what do I need?
