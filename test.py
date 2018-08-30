@@ -71,13 +71,14 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
 if __name__ == "__main__":
 
     training_size = 1000
-    testing_size = 500
+    testing_size = 100
 
     # Training features dict
     training_features = load_features('train-images-idx3-ubyte.gz', training_size)
 
     # Training targets array
     training_targets = load_labels('train-labels-idx1-ubyte.gz', training_size)
+
     print 'Training data imported'
 
     # Testing features dict
@@ -114,7 +115,7 @@ if __name__ == "__main__":
         feature_columns=feature_columns,
         n_classes=10,
         optimizer=tf.train.ProximalAdagradOptimizer(
-            learning_rate=0.0005,
+            learning_rate=0.005,
         )
     )
 
@@ -122,14 +123,14 @@ if __name__ == "__main__":
     testing_accuracy = []
 
     # Loop for training
-    for i in range(0, 10):
+    for i in range(0, 5):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
         start_time = time.time()
         _ = dnn_classifier.train(
             input_fn=training_input_fn,
-            steps=50,
+            steps=100,
         )
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
@@ -153,14 +154,24 @@ if __name__ == "__main__":
     # Array for holding amount of times arrays are summed
     class_sums = np.full(10, 0).tolist()
 
+
     predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
 
+    metric_predictions = []
+
     for i, prediction in enumerate(predictions):
+        #set up metric predictions
+        metric_predictions.append( np.argmax(prediction['probabilities']) )
+
         # Current class is the integer which we are getting predictions for
         current_class = int(prediction["classes"][0])
         # Sums array of accuracies with previous
         class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
         class_sums[current_class] += 1
+
+    metric_predictions = np.array(metric_predictions)
+    mean_squared_error = tf.metrics.mean_squared_error(metric_predictions, testing_targets)
+    print 'Mean squared error ' + str(mean_squared_error)
 
     for i in range(0, 10):
        if class_sums[i] != 0 :
@@ -185,4 +196,7 @@ if __name__ == "__main__":
 
     ax.set_title("Accuracy of Numbers")
     fig.tight_layout()
+
+    #predictions = np.array([item['predictions'][0] for item in predictions])
+
     plt.show()
