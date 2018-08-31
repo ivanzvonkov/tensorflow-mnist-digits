@@ -68,6 +68,7 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
     return feature, label
 
 
+
 if __name__ == "__main__":
 
     training_size = 1000
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     testing_accuracy = []
 
     # Loop for training
-    for i in range(0, 5):
+    for i in range(0, 2):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
@@ -135,13 +136,13 @@ if __name__ == "__main__":
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
 
-        metrics = dnn_classifier.evaluate(input_fn=training_input_fn, steps=50)
-        print('Training set accuracy: {accuracy:0.3f}'.format(**metrics))
-        training_accuracy = np.append(training_accuracy, metrics['accuracy'])
+        result = dnn_classifier.evaluate(input_fn=training_input_fn, steps=50)
+        print('Training set accuracy: {accuracy:0.3f}'.format(**result))
+        training_accuracy = np.append(training_accuracy, result['accuracy'])
 
-        metrics = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
-        print('Training test accuracy: {accuracy:0.3f}'.format(**metrics))
-        testing_accuracy = np.append(testing_accuracy, metrics['accuracy'])
+        result = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
+        print('Training test accuracy: {accuracy:0.3f}'.format(**result))
+        testing_accuracy = np.append(testing_accuracy, result['accuracy'])
 
     # Plot of training accuracy vs testing accuracy
     training_line = plt.plot(training_accuracy, label="Training")
@@ -169,9 +170,17 @@ if __name__ == "__main__":
         class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
         class_sums[current_class] += 1
 
-    metric_predictions = np.array(metric_predictions)
-    mean_squared_error = tf.metrics.mean_squared_error(metric_predictions, testing_targets)
-    print 'Mean squared error ' + str(mean_squared_error)
+    metric_predictions = np.array(metric_predictions, dtype=np.float64)
+    print metric_predictions.dtype
+    print metric_predictions.size
+    metric_predictions = tf.convert_to_tensor(metric_predictions)
+
+    targets = np.array(testing_targets, dtype=np.float64)
+    print targets.dtype
+    print targets.size
+    targets = tf.convert_to_tensor(targets)
+    mean_squared_error = metrics.mean_squared_error(metric_predictions, targets)
+    print mean_squared_error
 
     for i in range(0, 10):
        if class_sums[i] != 0 :
@@ -197,6 +206,5 @@ if __name__ == "__main__":
     ax.set_title("Accuracy of Numbers")
     fig.tight_layout()
 
-    #predictions = np.array([item['predictions'][0] for item in predictions])
 
     plt.show()
