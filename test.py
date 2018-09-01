@@ -71,8 +71,8 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
 
 if __name__ == "__main__":
 
-    training_size = 1000
-    testing_size = 1000
+    training_size = 2000
+    testing_size = 100
 
     # Training features dict
     training_features = load_features('train-images-idx3-ubyte.gz', training_size)
@@ -94,10 +94,10 @@ if __name__ == "__main__":
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
 
     # Training input function, returning iterator, shuffle automatically on
-    training_input_fn = lambda: input_function(training_features, training_targets)
+    training_input_fn = lambda: input_function(training_features, training_targets, batch_size=200)
 
     # Testing input fuction, returning iterator, shuffle automatically on
-    testing_input_fn = lambda: input_function(testing_features, testing_targets)
+    testing_input_fn = lambda: input_function(testing_features, testing_targets, batch_size=200)
 
     # Prediction input function, one epoch
     prediction_input_fn_training = lambda: input_function(training_features, training_targets, num_epochs=1, shuffle=False)
@@ -106,20 +106,13 @@ if __name__ == "__main__":
     prediction_input_fn_testing = lambda: input_function(testing_features, testing_targets, num_epochs=1, shuffle=False)
 
     print 'Setting up classifier'
-    # dnn_classifier = tf.estimator.DNNClassifier(
-    #     feature_columns=feature_columns,
-    #     n_classes=10,
-    #     hidden_units=[10,10],
-    #     optimizer=tf.train.ProximalAdagradOptimizer(
-    #         learning_rate=0.005,
-    #     )
-    # )
-
-    dnn_classifier = tf.estimator.LinearClassifier(
+    dnn_classifier = tf.estimator.DNNClassifier(
         feature_columns=feature_columns,
         n_classes=10,
+        hidden_units=[10,20,10],
+        dropout=0.1,
         optimizer=tf.train.ProximalAdagradOptimizer(
-            learning_rate=0.005,
+            learning_rate=0.007
         )
     )
 
@@ -134,7 +127,7 @@ if __name__ == "__main__":
         start_time = time.time()
         _ = dnn_classifier.train(
             input_fn=training_input_fn,
-            steps=100,
+            steps=50,
         )
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
@@ -172,12 +165,9 @@ if __name__ == "__main__":
     plt.xlabel("Periods")
     plt.title("LogLoss vs. Periods")
     plt.plot(training_error, label="training")
-    plt.plot(testing_error, label="validation")
+    plt.plot(testing_error, label="testing")
     plt.legend()
     plt.show()
-
-
-
 
 
     # # 2d array for holding accuracy
