@@ -15,7 +15,7 @@ def convert_header(header, index):
 
 
 # Loads features from file and returns features dict
-def load_features(filename, size):
+def load_features(filename, size, start=0,):
     with gzip.open(filename) as bytestream:
         # Read header
         header = bytestream.read(16)
@@ -29,7 +29,7 @@ def load_features(filename, size):
         data = data.reshape(num_images, IMAGE_SIZE * IMAGE_SIZE)
         data = np.array(data)
         data = data.astype(np.float32)
-        data = data[0:size]
+        data = data[start:size]
         data = data / 255
         features = {"image": data}
 
@@ -37,7 +37,7 @@ def load_features(filename, size):
 
 
 # Loads labels from file and returns label array
-def load_labels(filename, size):
+def load_labels(filename, size, start=0):
     with gzip.open(filename) as bytestream:
         # read header
         header = bytestream.read(8)
@@ -48,7 +48,7 @@ def load_labels(filename, size):
         data = bytestream.read(num_images)
         labels = np.frombuffer(data, dtype=np.uint8)
         labels = labels.astype(np.int32)
-        labels = labels[0:size]
+        labels = labels[start:size]
 
     return labels
 
@@ -88,6 +88,12 @@ if __name__ == "__main__":
     # Testing targets array
     testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size)
 
+    # Testing features dict
+    validation_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, start=100)
+
+    # Testing targets array
+    validation_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, start=100)
+
     print 'Testing data imported'
 
     # Feature column for classifier, shape based on 28 by 28 pixel
@@ -105,12 +111,14 @@ if __name__ == "__main__":
     # Prediction input function, one epoch
     prediction_input_fn_testing = lambda: input_function(testing_features, testing_targets, num_epochs=1, shuffle=False)
 
+    # Prediction input validation function, one epoch
+    prediction_input_fn_validation = lambda: input_function(validation_features, validation_targets, num_epochs=1, shuffle=False)
+
     print 'Setting up classifier'
     dnn_classifier = tf.estimator.DNNClassifier(
         feature_columns=feature_columns,
         n_classes=10,
         hidden_units=[10,20,10],
-        dropout=0.1,
         optimizer=tf.train.ProximalAdagradOptimizer(
             learning_rate=0.007
         )
@@ -154,11 +162,16 @@ if __name__ == "__main__":
 
     # Plot of training log loss vs testing log loss
     # Calculate final predictions (not probabilities, as above).
-    final_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_testing)
-    final_predictions = np.array([item['class_ids'][0] for item in final_predictions])
+    testing_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_testing)
+    testing_predictions = np.array([item['class_ids'][0] for item in testing_predictions])
+    testing_accuracy = metrics.accuracy_score(testing_targets, testing_predictions)
+    print("Testing accuracy: %0.2f" % testing_accuracy)
 
-    accuracy = metrics.accuracy_score(testing_targets, final_predictions)
-    print("Final accuracy: %0.2f" % accuracy)
+    validation_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_validation)
+    validation_predictions = np.array([item['class_ids'][0] for item in validation_predictions])
+
+    validation_accuracy = metrics.accuracy_score(validation_targets, validation_predictions)
+    print("Validation accuracy: %0.2f" % validation_accuracy)
 
     # Output a graph of loss metrics over periods.
     plt.ylabel("LogLoss")
