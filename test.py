@@ -72,7 +72,7 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
 if __name__ == "__main__":
 
     training_size = 1000
-    testing_size = 100
+    testing_size = 1000
 
     # Training features dict
     training_features = load_features('train-images-idx3-ubyte.gz', training_size)
@@ -100,7 +100,10 @@ if __name__ == "__main__":
     testing_input_fn = lambda: input_function(testing_features, testing_targets)
 
     # Prediction input function, one epoch
-    prediction_input_fn = lambda: input_function(testing_features, testing_targets, num_epochs=1, shuffle=False)
+    prediction_input_fn_training = lambda: input_function(training_features, training_targets, num_epochs=1, shuffle=False)
+
+    # Prediction input function, one epoch
+    prediction_input_fn_testing = lambda: input_function(testing_features, testing_targets, num_epochs=1, shuffle=False)
 
     print 'Setting up classifier'
     # dnn_classifier = tf.estimator.DNNClassifier(
@@ -120,11 +123,11 @@ if __name__ == "__main__":
         )
     )
 
-    training_accuracy = []
-    testing_accuracy = []
+    training_error = []
+    testing_error = []
 
     # Loop for training
-    for i in range(0, 2):
+    for i in range(0, 10):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
@@ -136,75 +139,103 @@ if __name__ == "__main__":
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
 
-        result = dnn_classifier.evaluate(input_fn=training_input_fn, steps=50)
-        print('Training set accuracy: {accuracy:0.3f}'.format(**result))
-        training_accuracy = np.append(training_accuracy, result['accuracy'])
+        # Calculate log loss
+        training_predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn_training)) # Array of prediction percentages
+        training_probabilities = np.array([item['probabilities'] for item in training_predictions]) # 2d array of percentages of [0.043, ...]
+        training_class_ids = np.array([item['class_ids'][0] for item in training_predictions]) # Array of prediction of 7
+        training_pred_one_hot = tf.keras.utils.to_categorical(training_class_ids, 10) # 2d one hot array of [0. 0. ... 1. 0. 0.]
 
-        result = dnn_classifier.evaluate(input_fn=testing_input_fn, steps=50)
-        print('Training test accuracy: {accuracy:0.3f}'.format(**result))
-        testing_accuracy = np.append(testing_accuracy, result['accuracy'])
+        testing_predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn_testing))
+        testing_probabilities = np.array([item['probabilities'] for item in testing_predictions])
+        testing_class_ids = np.array([item['class_ids'][0] for item in testing_predictions])
+        testing_pred_one_hot = tf.keras.utils.to_categorical(testing_class_ids, 10)
 
-    # Plot of training accuracy vs testing accuracy
-    training_line = plt.plot(training_accuracy, label="Training")
-    testing_line = plt.plot(testing_accuracy, label="Testing")
+        training_log_loss = metrics.log_loss(training_targets, training_pred_one_hot)
+        testing_log_loss = metrics.log_loss(testing_targets, testing_pred_one_hot)
+
+        training_error.append(training_log_loss)
+        testing_error.append(testing_log_loss)
+
+        print("%0.2f" % training_log_loss)
+        print("%0.2f" % testing_log_loss)
+
+    # Plot of training log loss vs testing log loss
+    # Calculate final predictions (not probabilities, as above).
+    final_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_testing)
+    final_predictions = np.array([item['class_ids'][0] for item in final_predictions])
+
+    accuracy = metrics.accuracy_score(testing_targets, final_predictions)
+    print("Final accuracy: %0.2f" % accuracy)
+
+    # Output a graph of loss metrics over periods.
+    plt.ylabel("LogLoss")
+    plt.xlabel("Periods")
+    plt.title("LogLoss vs. Periods")
+    plt.plot(training_error, label="training")
+    plt.plot(testing_error, label="validation")
     plt.legend()
-
-    # 2d array for holding accuracy
-    class_accuracy = np.full((10,10), 0).tolist()
-
-    # Array for holding amount of times arrays are summed
-    class_sums = np.full(10, 0).tolist()
-
-
-    predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
-
-    metric_predictions = []
-
-    for i, prediction in enumerate(predictions):
-        #set up metric predictions
-        metric_predictions.append( np.argmax(prediction['probabilities']) )
-
-        # Current class is the integer which we are getting predictions for
-        current_class = int(prediction["classes"][0])
-        # Sums array of accuracies with previous
-        class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
-        class_sums[current_class] += 1
-
-    metric_predictions = np.array(metric_predictions, dtype=np.float64)
-    print metric_predictions.dtype
-    print metric_predictions.size
-    metric_predictions = tf.convert_to_tensor(metric_predictions)
-
-    targets = np.array(testing_targets, dtype=np.float64)
-    print targets.dtype
-    print targets.size
-    targets = tf.convert_to_tensor(targets)
-    mean_squared_error = metrics.mean_squared_error(metric_predictions, targets)
-    print mean_squared_error
-
-    for i in range(0, 10):
-       if class_sums[i] != 0 :
-        class_accuracy[i] = class_accuracy[i] / class_sums[i]
-
-    fig, ax = plt.subplots()
-    im = ax.imshow(class_accuracy)
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(10))
-    ax.set_yticks(np.arange(10))
-
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(np.arange(10))
-    ax.set_yticklabels(np.arange(10))
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(10):
-        for j in range(10):
-            text = ax.text(j, i, "{0:.2f}".format(class_accuracy[j][i]),
-                           ha="center", va="center", color="w")
-
-    ax.set_title("Accuracy of Numbers")
-    fig.tight_layout()
-
-
     plt.show()
+
+
+
+
+
+    # # 2d array for holding accuracy
+    # class_accuracy = np.full((10,10), 0).tolist()
+    #
+    # # Array for holding amount of times arrays are summed
+    # class_sums = np.full(10, 0).tolist()
+    #
+    #
+    # predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
+    #
+    # metric_predictions = []
+    #
+    # for i, prediction in enumerate(predictions):
+    #     #set up metric predictions
+    #     metric_predictions.append( np.argmax(prediction['probabilities']) )
+    #
+    #     # Current class is the integer which we are getting predictions for
+    #     current_class = int(prediction["classes"][0])
+    #     # Sums array of accuracies with previous
+    #     class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
+    #     class_sums[current_class] += 1
+    #
+    # metric_predictions = np.array(metric_predictions, dtype=np.float64)
+    # print metric_predictions.dtype
+    # print metric_predictions.size
+    # metric_predictions = tf.convert_to_tensor(metric_predictions)
+    #
+    # targets = np.array(testing_targets, dtype=np.float64)
+    # print targets.dtype
+    # print targets.size
+    # targets = tf.convert_to_tensor(targets)
+    # mean_squared_error = metrics.mean_squared_error(metric_predictions, targets)
+    # print mean_squared_error
+    #
+    # for i in range(0, 10):
+    #    if class_sums[i] != 0 :
+    #     class_accuracy[i] = class_accuracy[i] / class_sums[i]
+    #
+    # fig, ax = plt.subplots()
+    # im = ax.imshow(class_accuracy)
+    #
+    # # We want to show all ticks...
+    # ax.set_xticks(np.arange(10))
+    # ax.set_yticks(np.arange(10))
+    #
+    # # ... and label them with the respective list entries
+    # ax.set_xticklabels(np.arange(10))
+    # ax.set_yticklabels(np.arange(10))
+    #
+    # # Loop over data dimensions and create text annotations.
+    # for i in range(10):
+    #     for j in range(10):
+    #         text = ax.text(j, i, "{0:.2f}".format(class_accuracy[j][i]),
+    #                        ha="center", va="center", color="w")
+    #
+    # ax.set_title("Accuracy of Numbers")
+    # fig.tight_layout()
+    #
+    #
+    # plt.show()
