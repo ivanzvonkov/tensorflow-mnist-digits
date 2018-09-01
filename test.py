@@ -29,7 +29,7 @@ def load_features(filename, size, start=0,):
         data = data.reshape(num_images, IMAGE_SIZE * IMAGE_SIZE)
         data = np.array(data)
         data = data.astype(np.float32)
-        data = data[start:size]
+        data = data[start:start+size]
         data = data / 255
         features = {"image": data}
 
@@ -48,7 +48,7 @@ def load_labels(filename, size, start=0):
         data = bytestream.read(num_images)
         labels = np.frombuffer(data, dtype=np.uint8)
         labels = labels.astype(np.int32)
-        labels = labels[start:size]
+        labels = labels[start:start+size]
 
     return labels
 
