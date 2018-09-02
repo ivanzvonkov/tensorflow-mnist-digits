@@ -89,10 +89,10 @@ if __name__ == "__main__":
     testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size)
 
     # Testing features dict
-    validation_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, start=100)
+    validation_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, start=200)
 
     # Testing targets array
-    validation_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, start=100)
+    validation_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, start=200)
 
     print 'Testing data imported'
 
@@ -100,10 +100,10 @@ if __name__ == "__main__":
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
 
     # Training input function, returning iterator, shuffle automatically on
-    training_input_fn = lambda: input_function(training_features, training_targets, batch_size=200)
+    training_input_fn = lambda: input_function(training_features, training_targets, batch_size=100)
 
     # Testing input fuction, returning iterator, shuffle automatically on
-    testing_input_fn = lambda: input_function(testing_features, testing_targets, batch_size=200)
+    testing_input_fn = lambda: input_function(testing_features, testing_targets, batch_size=100)
 
     # Prediction input function, one epoch
     prediction_input_fn_training = lambda: input_function(training_features, training_targets, num_epochs=1, shuffle=False)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         n_classes=10,
         hidden_units=[10,20,10],
         optimizer=tf.train.ProximalAdagradOptimizer(
-            learning_rate=0.007
+            learning_rate=0.011
         )
     )
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         start_time = time.time()
         _ = dnn_classifier.train(
             input_fn=training_input_fn,
-            steps=50,
+            steps=80,
         )
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
