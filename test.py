@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import gzip
 import matplotlib.pyplot as plt
+import copy
 from tensorflow.python.data import Dataset
 from sklearn import metrics
 
@@ -67,13 +68,53 @@ def input_function(features, targets, batch_size=1, shuffle=True, num_epochs=Non
     feature, label = ds.make_one_shot_iterator().get_next()
     return feature, label
 
+# Heat map of number accuracy, takes in predictions as list
+def draw_accuracy_heat_map(predictions, graph_name):
+    # 2d array for holding accuracy
+    class_accuracy = np.full((10, 10), 0).tolist()
 
+    # Array for holding amount of times arrays are summed
+    class_sums = np.full(10, 0).tolist()
+
+    for i, prediction in enumerate(predictions):
+        # Current class is the integer which we are getting predictions for
+        current_class = int(prediction["classes"][0])
+        # Sums array of accuracies with previous
+        class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
+        class_sums[current_class] += 1
+
+    for i in range(0, 10):
+       if class_sums[i] != 0 :
+        class_accuracy[i] = class_accuracy[i] / class_sums[i]
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(class_accuracy)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(10))
+    ax.set_yticks(np.arange(10))
+
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(np.arange(10))
+    ax.set_yticklabels(np.arange(10))
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(10):
+        for j in range(10):
+            text = ax.text(j, i, "{0:.2f}".format(class_accuracy[j][i]),
+                           ha="center", va="center", color="w")
+
+    ax.set_title(graph_name)
+    fig.tight_layout()
+
+    plt.show()
 
 if __name__ == "__main__":
 
-    training_size = 2000
-    testing_size = 100
-
+    training_size = 1000
+    testing_size = 200
+    testing_start = 100
+    validation_start = 500
     # Training features dict
     training_features = load_features('train-images-idx3-ubyte.gz', training_size)
 
@@ -83,16 +124,16 @@ if __name__ == "__main__":
     print 'Training data imported'
 
     # Testing features dict
-    testing_features = load_features('t10k-images-idx3-ubyte.gz', testing_size)
+    testing_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, testing_start)
 
     # Testing targets array
-    testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size)
+    testing_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, testing_start)
 
     # Testing features dict
-    validation_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, start=200)
+    validation_features = load_features('t10k-images-idx3-ubyte.gz', testing_size, validation_start)
 
     # Testing targets array
-    validation_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, start=200)
+    validation_targets = load_labels('t10k-labels-idx1-ubyte.gz', testing_size, validation_start)
 
     print 'Testing data imported'
 
@@ -127,6 +168,8 @@ if __name__ == "__main__":
     training_error = []
     testing_error = []
 
+    sess = tf.Session()
+
     # Loop for training
     for i in range(0, 10):
         print '------------------------'
@@ -135,7 +178,7 @@ if __name__ == "__main__":
         start_time = time.time()
         _ = dnn_classifier.train(
             input_fn=training_input_fn,
-            steps=80,
+            steps=50,
         )
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
@@ -160,7 +203,10 @@ if __name__ == "__main__":
         print("%0.2f" % training_log_loss)
         print("%0.2f" % testing_log_loss)
 
-    # Plot of training log loss vs testing log loss
+    # End session
+    saver = tf.train.Saver()
+    saver.save(sess, 'model/model.ckpt')
+
     # Calculate final predictions (not probabilities, as above).
     testing_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_testing)
     testing_predictions = np.array([item['class_ids'][0] for item in testing_predictions])
@@ -169,7 +215,6 @@ if __name__ == "__main__":
 
     validation_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_validation)
     validation_predictions = np.array([item['class_ids'][0] for item in validation_predictions])
-
     validation_accuracy = metrics.accuracy_score(validation_targets, validation_predictions)
     print("Validation accuracy: %0.2f" % validation_accuracy)
 
@@ -182,63 +227,5 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-
-    # # 2d array for holding accuracy
-    # class_accuracy = np.full((10,10), 0).tolist()
-    #
-    # # Array for holding amount of times arrays are summed
-    # class_sums = np.full(10, 0).tolist()
-    #
-    #
-    # predictions = list(dnn_classifier.predict(input_fn=prediction_input_fn))
-    #
-    # metric_predictions = []
-    #
-    # for i, prediction in enumerate(predictions):
-    #     #set up metric predictions
-    #     metric_predictions.append( np.argmax(prediction['probabilities']) )
-    #
-    #     # Current class is the integer which we are getting predictions for
-    #     current_class = int(prediction["classes"][0])
-    #     # Sums array of accuracies with previous
-    #     class_accuracy[current_class] = np.sum((class_accuracy[current_class], prediction["probabilities"]), axis=0)
-    #     class_sums[current_class] += 1
-    #
-    # metric_predictions = np.array(metric_predictions, dtype=np.float64)
-    # print metric_predictions.dtype
-    # print metric_predictions.size
-    # metric_predictions = tf.convert_to_tensor(metric_predictions)
-    #
-    # targets = np.array(testing_targets, dtype=np.float64)
-    # print targets.dtype
-    # print targets.size
-    # targets = tf.convert_to_tensor(targets)
-    # mean_squared_error = metrics.mean_squared_error(metric_predictions, targets)
-    # print mean_squared_error
-    #
-    # for i in range(0, 10):
-    #    if class_sums[i] != 0 :
-    #     class_accuracy[i] = class_accuracy[i] / class_sums[i]
-    #
-    # fig, ax = plt.subplots()
-    # im = ax.imshow(class_accuracy)
-    #
-    # # We want to show all ticks...
-    # ax.set_xticks(np.arange(10))
-    # ax.set_yticks(np.arange(10))
-    #
-    # # ... and label them with the respective list entries
-    # ax.set_xticklabels(np.arange(10))
-    # ax.set_yticklabels(np.arange(10))
-    #
-    # # Loop over data dimensions and create text annotations.
-    # for i in range(10):
-    #     for j in range(10):
-    #         text = ax.text(j, i, "{0:.2f}".format(class_accuracy[j][i]),
-    #                        ha="center", va="center", color="w")
-    #
-    # ax.set_title("Accuracy of Numbers")
-    # fig.tight_layout()
-    #
-    #
-    # plt.show()
+    validation_predictions_list = list(dnn_classifier.predict(input_fn=prediction_input_fn_validation))
+    draw_accuracy_heat_map(validation_predictions_list, "Validation Accuracy")
