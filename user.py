@@ -41,7 +41,4 @@ if __name__ == "__main__":
 
     predictions = predict_fn(features)
 
-
-
     print predictions
-

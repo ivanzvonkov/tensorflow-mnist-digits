@@ -142,6 +142,7 @@ if __name__ == "__main__":
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
 
     # Training input function, returning iterator, shuffle automatically on
+
     training_input_fn = lambda: input_function(training_features, training_targets, batch_size=300)
 
     # Testing input fuction, returning iterator, shuffle automatically on
@@ -157,7 +158,6 @@ if __name__ == "__main__":
     prediction_input_fn_validation = lambda: input_function(validation_features, validation_targets, num_epochs=1, shuffle=False)
 
     print 'Setting up classifier'
-
     dnn_classifier = tf.estimator.DNNClassifier(
         model_dir=os.getcwd()+"/model/mnist-model",
         feature_columns=feature_columns,
@@ -171,9 +171,6 @@ if __name__ == "__main__":
     training_error = []
     testing_error = []
 
-    #saver = tf.train.Saver()
-    sess = tf.Session()
-
     # Loop for training
     for i in range(0, 10):
         print '------------------------'
@@ -182,7 +179,7 @@ if __name__ == "__main__":
         start_time = time.time()
         _ = dnn_classifier.train(
             input_fn=training_input_fn,
-            steps=150,
+            steps=150
         )
         end_time = time.time()
         print 'Training classifier: ', end_time - start_time
@@ -207,9 +204,6 @@ if __name__ == "__main__":
         print("%0.2f" % training_log_loss)
         print("%0.2f" % testing_log_loss)
 
-    # End session
-    #saver = tf.train.Saver()
-    #saver.save(sess, 'model/model.ckpt')
 
     # Calculate final predictions (not probabilities, as above).
     testing_predictions = dnn_classifier.predict(input_fn=prediction_input_fn_testing)
