@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from tensorflow.python.data import Dataset
 from sklearn import metrics
 import os
+from tensorflow.python.estimator.export import export
 
 
 # Converts header values
@@ -226,3 +227,10 @@ if __name__ == "__main__":
 
     validation_predictions_list = list(dnn_classifier.predict(input_fn=prediction_input_fn_validation))
     draw_accuracy_heat_map(validation_predictions_list, "Validation Accuracy")
+
+    feature_spec = tf.feature_column.make_parse_example_spec(feature_columns=feature_columns)
+
+    dnn_classifier.export_savedmodel(
+        export_dir_base='./saved_model',
+        serving_input_fn=export.build_parsing_serving_input_receiver_fn()
+    )

@@ -81,9 +81,9 @@ if __name__ == "__main__":
 
     print 'Hello user!'
 
-    features = load_features('train-images-idx3-ubyte.gz', 10)
+    features = load_features('train-images-idx3-ubyte.gz', 3)
 
-    targets = load_labels('train-labels-idx1-ubyte.gz', 10)
+    targets = load_labels('train-labels-idx1-ubyte.gz', 3)
 
     predictions_input_fn = lambda: input_function(features, targets)
 
@@ -102,8 +102,12 @@ if __name__ == "__main__":
     )
 
     predictions = dnn_classifier.predict(input_fn=predictions_input_fn)
-    print np.array(predictions)
+    # print np.array(predictions)
+    #
+    # #something with predictions not printing
+    # predictions = np.array([item['class_ids'][0] for item in predictions])
+    # print predictions
 
-    #something with predictions not printing
     predictions = np.array([item['class_ids'][0] for item in predictions])
-    print predictions
+    accuracy = metrics.accuracy_score(targets, predictions)
+    print("Validation accuracy: %0.2f" % accuracy)
