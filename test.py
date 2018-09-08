@@ -172,7 +172,7 @@ if __name__ == "__main__":
     testing_error = []
 
     # Loop for training
-    for i in range(0, 10):
+    for i in range(0, 1):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
@@ -230,7 +230,4 @@ if __name__ == "__main__":
 
     feature_spec = tf.feature_column.make_parse_example_spec(feature_columns=feature_columns)
 
-    dnn_classifier.export_savedmodel(
-        export_dir_base='./saved_model',
-        serving_input_fn=export.build_parsing_serving_input_receiver_fn()
-    )
+    dnn_classifier.export_savedmodel( './mnist_saved_model', export.build_parsing_serving_input_receiver_fn(feature_spec) )

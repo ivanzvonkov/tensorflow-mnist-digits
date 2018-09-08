@@ -28,7 +28,8 @@ def load_features(filename, size, start=0,):
         data = data.astype(np.float32)
         data = data[start:start+size]
         data = data / 255
-        features = {"image": data}
+        #features = {"image": data}
+        features = data
 
     return features
 
@@ -81,33 +82,21 @@ if __name__ == "__main__":
 
     print 'Hello user!'
 
-    features = load_features('train-images-idx3-ubyte.gz', 3)
+    features = load_features('train-images-idx3-ubyte.gz', 1)
 
-    targets = load_labels('train-labels-idx1-ubyte.gz', 3)
+    targets = load_labels('train-labels-idx1-ubyte.gz', 1)
 
     predictions_input_fn = lambda: input_function(features, targets)
 
     # Feature column for classifier, shape based on 28 by 28 pixel
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
 
-    # Getting classifier
-    dnn_classifier = tf.estimator.DNNClassifier(
-        model_dir=os.getcwd() + "/model/mnist-model",
-        feature_columns=feature_columns,
-        n_classes=10,
-        hidden_units=[10, 20, 10],
-        optimizer=tf.train.ProximalAdagradOptimizer(
-            learning_rate=0.011
-        )
-    )
+    with tf.Session() as sess:
+        tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], './mnist_saved_model/1536369603')
+        predictor = tf.contrib.predictor.from_saved_model('./mnist_saved_model/1536369603')
+        model_input = tf.train.Example(features=tf.train.Features(feature={"image": tf.train.Feature(int64_list=tf.train.Int64List(value=features[0]))}))
+        model_input = model_input.SerializeToString()
+        output_dict = predictor({"predictor_inputs": [model_input]})
+        y_predicted = output_dict["pred_output_classes"][0]
 
-    predictions = dnn_classifier.predict(input_fn=predictions_input_fn)
-    # print np.array(predictions)
-    #
-    # #something with predictions not printing
-    # predictions = np.array([item['class_ids'][0] for item in predictions])
-    # print predictions
 
-    predictions = np.array([item['class_ids'][0] for item in predictions])
-    accuracy = metrics.accuracy_score(targets, predictions)
-    print("Validation accuracy: %0.2f" % accuracy)

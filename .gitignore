@@ -1,4 +1,5 @@
 /.idea
+/mnist_saved_model
 /model
 /venv
 mnist_train_small.csv
