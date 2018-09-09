@@ -172,7 +172,7 @@ if __name__ == "__main__":
     testing_error = []
 
     # Loop for training
-    for i in range(0, 1):
+    for i in range(0, 0):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
@@ -229,5 +229,7 @@ if __name__ == "__main__":
     draw_accuracy_heat_map(validation_predictions_list, "Validation Accuracy")
 
     feature_spec = tf.feature_column.make_parse_example_spec(feature_columns=feature_columns)
+
+    print feature_spec
 
     dnn_classifier.export_savedmodel( './mnist_saved_model', export.build_parsing_serving_input_receiver_fn(feature_spec) )

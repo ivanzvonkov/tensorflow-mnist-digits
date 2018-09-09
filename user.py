@@ -49,44 +49,14 @@ def load_labels(filename, size, start=0):
 
     return labels
 
-# Input function used with dnn_classifier returns iterators of features, labels
-def input_function(features, targets=None, batch_size=1, shuffle=True, num_epochs=None):
-    # Construct a dataset, and configure batching/repeating.
-
-    if targets is None:
-        # No labels, use only features.
-        inputs = features
-    else:
-        inputs = (features, targets)
-
-        # Convert the inputs to a Dataset.
-
-    ds = Dataset.from_tensor_slices(inputs)
-
-    ds = ds.batch(batch_size).repeat(num_epochs)
-
-    # Shuffle the data, if specified.
-    if shuffle:
-        ds = ds.shuffle(buffer_size=10000)
-
-    # Return the next batch of data
-    if targets is None:
-        feature = ds.make_one_shot_iterator().get_next()
-        return feature
-    else:
-        feature, label = ds.make_one_shot_iterator().get_next()
-        return feature, label
-
 
 if __name__ == "__main__":
 
     print 'Hello user!'
 
-    features = load_features('train-images-idx3-ubyte.gz', 1)
+    one_feature = load_features('train-images-idx3-ubyte.gz', 1)
 
     targets = load_labels('train-labels-idx1-ubyte.gz', 1)
-
-    predictions_input_fn = lambda: input_function(features, targets)
 
     # Feature column for classifier, shape based on 28 by 28 pixel
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
@@ -94,9 +64,17 @@ if __name__ == "__main__":
     with tf.Session() as sess:
         tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], './mnist_saved_model/1536369603')
         predictor = tf.contrib.predictor.from_saved_model('./mnist_saved_model/1536369603')
-        model_input = tf.train.Example(features=tf.train.Features(feature={"image": tf.train.Feature(int64_list=tf.train.Int64List(value=features[0]))}))
+        model_input = tf.train.Example(features=tf.train.Features(feature={
+            'image': tf.train.Feature(float_list=tf.train.FloatList(value=one_feature[0]))
+        }))
+
         model_input = model_input.SerializeToString()
-        output_dict = predictor({"predictor_inputs": [model_input]})
-        y_predicted = output_dict["pred_output_classes"][0]
+        output_dict = predictor({u'inputs': [model_input]})
+        prediction_array = output_dict[u'scores'][0]
+        prediction_list = list(prediction_array)
+        prediction_value = prediction_list.index(max(prediction_list))
+        prediction_accuracy = max(prediction_list)*100
+        print 'I am guessing it\'s '  + str(prediction_value) + ' with '+ str("%.2f" % prediction_accuracy) + '% accuracy!'
+
 
 
