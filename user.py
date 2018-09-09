@@ -1,11 +1,7 @@
-import time
 import tensorflow as tf
 import numpy as np
 import gzip
-import matplotlib.pyplot as plt
-from tensorflow.python.data import Dataset
-from sklearn import metrics
-import os
+import random
 
 # Converts header values
 def convert_header(header, index):
@@ -49,14 +45,31 @@ def load_labels(filename, size, start=0):
 
     return labels
 
+def predict_one(predictor, one_feature):
+
+    model_input = tf.train.Example(features=tf.train.Features(feature={
+        'image': tf.train.Feature(float_list=tf.train.FloatList(value=one_feature))
+    }))
+
+    model_input = model_input.SerializeToString()
+
+    output_dict = predictor({u'inputs': [model_input]})
+    prediction_list = list(output_dict[u'scores'][0])
+    prediction_value = prediction_list.index(max(prediction_list))
+    prediction_accuracy = max(prediction_list) * 100
+
+    return prediction_value, prediction_accuracy
+
 
 if __name__ == "__main__":
 
     print 'Hello user!'
 
-    one_feature = load_features('train-images-idx3-ubyte.gz', 1)
+    size = 1000
 
-    targets = load_labels('train-labels-idx1-ubyte.gz', 1)
+    features = load_features('train-images-idx3-ubyte.gz', size, start=9000)
+
+    targets = load_labels('train-labels-idx1-ubyte.gz', size, start=9000)
 
     # Feature column for classifier, shape based on 28 by 28 pixel
     feature_columns = [tf.feature_column.numeric_column("image", shape=784)]
@@ -64,17 +77,17 @@ if __name__ == "__main__":
     with tf.Session() as sess:
         tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], './mnist_saved_model/1536369603')
         predictor = tf.contrib.predictor.from_saved_model('./mnist_saved_model/1536369603')
-        model_input = tf.train.Example(features=tf.train.Features(feature={
-            'image': tf.train.Feature(float_list=tf.train.FloatList(value=one_feature[0]))
-        }))
 
-        model_input = model_input.SerializeToString()
-        output_dict = predictor({u'inputs': [model_input]})
-        prediction_array = output_dict[u'scores'][0]
-        prediction_list = list(prediction_array)
-        prediction_value = prediction_list.index(max(prediction_list))
-        prediction_accuracy = max(prediction_list)*100
-        print 'I am guessing it\'s '  + str(prediction_value) + ' with '+ str("%.2f" % prediction_accuracy) + '% accuracy!'
+        while(True):
+            random_number = random.randint(0, size)
+
+            prediction_value, prediction_accuracy = predict_one(predictor, features[random_number])
+            print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
+            print 'Answer is '+ str(targets[random_number])
+            user_input = raw_input("Quit (q) or Continue (Enter)")
+
+            if user_input == 'q':
+                break
 
 
 
