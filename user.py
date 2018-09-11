@@ -2,6 +2,15 @@ import tensorflow as tf
 import numpy as np
 import gzip
 import random
+import  PIL
+from PIL import Image, ImageTk, ImageDraw
+from Tkinter import *
+
+root = Tk()
+cv = Canvas(root, width=256,height=256, bg='white' )
+cv.pack
+drawing_image = PIL.Image.new('RGB', (256,256), (255,255,255))
+draw = ImageDraw.Draw(drawing_image)
 
 # Converts header values
 def convert_header(header, index):
@@ -59,6 +68,11 @@ def predict_one(predictor, one_feature):
     prediction_accuracy = max(prediction_list) * 100
 
     return prediction_value, prediction_accuracy
+
+def paint(event, draw):
+    x1, y1 = (event.x -1), (event.y -1)
+    x2,y2 = (event.x +1), (event.y +1)
+    cv.create_oval(x1,y1,x2,y2,fill="black", width=5)
 
 
 if __name__ == "__main__":
