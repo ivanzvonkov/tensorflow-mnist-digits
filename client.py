@@ -24,7 +24,6 @@ def load_features(filename, size, start=0,):
         data = data.astype(np.float32)
         data = data[start:start+size]
         data = data / 255
-        #features = {"image": data}
         features = data
 
     return features
