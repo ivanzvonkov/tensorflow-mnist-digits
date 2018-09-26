@@ -59,9 +59,21 @@ def predict_one(predictor, one_feature):
 
     return prediction_value, prediction_accuracy
 
-if __name__ == "__main__":
+def predict_random_digit(predictor):
+    while (True):
+        random_number = random.randint(0, size)
+        prediction_value, prediction_accuracy = predict_one(predictor, features[random_number])
+        print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
+        print 'Answer is ' + str(targets[random_number])
+        user_input = raw_input("Quit (q) or Continue (Enter)")
+        if user_input == 'q':
+            break
 
-    print 'Hello user!'
+#def predict_drawn_digit():
+
+
+
+if __name__ == "__main__":
 
     size = 1000
 
@@ -76,16 +88,11 @@ if __name__ == "__main__":
         tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], './mnist_saved_model/1536369603')
         predictor = tf.contrib.predictor.from_saved_model('./mnist_saved_model/1536369603')
 
-        while(True):
-            random_number = random.randint(0, size)
-
-            prediction_value, prediction_accuracy = predict_one(predictor, features[random_number])
-            print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
-            print 'Answer is '+ str(targets[random_number])
-            user_input = raw_input("Quit (q) or Continue (Enter)")
-
-            if user_input == 'q':
-                break
+        user_input = raw_input("1. Predict random digits from data\n2. Predict drawn digits\n")
+        if raw_input == 1:
+            predict_random_digit(predictor)
+        elif raw_input == 2:
+            predict_drawn_digit(predictor)
 
 
 
