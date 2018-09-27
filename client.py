@@ -4,6 +4,9 @@ import gzip
 import random
 
 # Converts header values
+from paint import Paint
+
+
 def convert_header(header, index):
     return (header[index + 2] * 256) + header[index + 3]
 
@@ -69,11 +72,16 @@ def predict_random_digit(predictor):
         if user_input == 'q':
             break
 
-#def predict_drawn_digit():
+def predict_drawn_digit(drawn_feature):
+    print 'Guess from client'
 
-
+def start_paint():
+    observer = lambda: predict_drawn_digit()
+    p = Paint(observer)
 
 if __name__ == "__main__":
+
+    print 'Hello'
 
     size = 1000
 
@@ -88,11 +96,9 @@ if __name__ == "__main__":
         tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], './mnist_saved_model/1536369603')
         predictor = tf.contrib.predictor.from_saved_model('./mnist_saved_model/1536369603')
 
-        user_input = raw_input("1. Predict random digits from data\n2. Predict drawn digits\n")
-        if raw_input == 1:
-            predict_random_digit(predictor)
-        elif raw_input == 2:
-            predict_drawn_digit(predictor)
+        #predict_random_digit(predictor)
+
+        start_paint()
 
 
 
