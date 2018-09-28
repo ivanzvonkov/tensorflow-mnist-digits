@@ -12,9 +12,10 @@ class Paint:
 
     def clear(self):
         self.cv.delete('all')
+        self.drawing_feature = np.zeros((28, 28))
 
     def guess(self):
-        self.observer(self.drawing_feature)
+        self.observer_fn(self.drawing_feature)
 
     def update_drawing_feature(self,x,y):
         self.drawing_feature[x][y] = 1
