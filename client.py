@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import gzip
 import random
+from PIL import Image
 
 # Converts header values
 from paint import Paint
@@ -69,6 +70,7 @@ class Client:
         while (True):
             random_number = random.randint(0, self.size)
             prediction_value, prediction_accuracy = self.predict_one(self.features[random_number])
+            self.drawing_from_array(self.features[random_number])
             print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
             print 'Answer is ' + str(self.targets[random_number])
             user_input = raw_input("Quit (q) or Continue (Enter)")
@@ -78,12 +80,27 @@ class Client:
     def predict_drawn_digit(self, drawn_feature):
         drawn_feature = np.array(drawn_feature)
         drawn_feature = drawn_feature.flatten()
+        self.drawing_from_array(drawn_feature)
         prediction_value, prediction_accuracy = self.predict_one(drawn_feature)
         print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
 
     def start_paint(self):
         observer = lambda drawn_feature: self.predict_drawn_digit(drawn_feature)
         Paint(observer)
+
+    def drawing_from_array(self, features):
+        increment = 5
+        data = np.zeros((28*28, 3), dtype=np.uint8)
+
+        for i, feature in enumerate(features):
+            color = 255*feature
+            data[i] = np.array([color, color, color])
+
+        data = np.reshape(data, (28,28,3))
+
+        img = Image.fromarray(data, 'RGB')
+        img = img.resize((150,150))
+        img.show()
 
     def __init__(self):
 
