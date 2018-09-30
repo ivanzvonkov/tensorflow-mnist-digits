@@ -6,8 +6,10 @@ class Paint:
     def paint(self, event):
         x1, y1 = (event.x - 1), (event.y - 1)
         x2, y2 = (event.x + 1), (event.y + 1)
-        self.cv.create_rectangle(x1, y1, x2, y2, fill='black', width=5)
-        self.update_drawing_feature(event.x//4, event.y//4)
+
+        if(x1 > 0 and x2 < self.width and y1 > 0 and y2 < self.height):
+            self.cv.create_rectangle(x1, y1, x2, y2, fill='black', width=5)
+            self.update_drawing_feature(event.x//4, event.y//4)
 
 
     def clear(self):
@@ -15,6 +17,8 @@ class Paint:
         self.drawing_feature = np.zeros((28, 28))
 
     def guess(self):
+        self.drawing_feature = zip(*self.drawing_feature[::-1])
+        self.drawing_feature = np.flip(self.drawing_feature, 1)
         self.observer_fn(self.drawing_feature)
 
     def update_drawing_feature(self,x,y):

@@ -77,19 +77,20 @@ class Client:
             if user_input == 'q':
                 break
 
+    # Predicts drawn digit
     def predict_drawn_digit(self, drawn_feature):
         drawn_feature = np.array(drawn_feature)
         drawn_feature = drawn_feature.flatten()
-        self.drawing_from_array(drawn_feature)
         prediction_value, prediction_accuracy = self.predict_one(drawn_feature)
         print 'Guessing it\'s ' + str(prediction_value) + ' with ' + str("%.2f" % prediction_accuracy) + '% accuracy.'
 
+    # Starts paint object
     def start_paint(self):
         observer = lambda drawn_feature: self.predict_drawn_digit(drawn_feature)
         Paint(observer)
 
+    # Creates image from array for testing
     def drawing_from_array(self, features):
-        increment = 5
         data = np.zeros((28*28, 3), dtype=np.uint8)
 
         for i, feature in enumerate(features):
