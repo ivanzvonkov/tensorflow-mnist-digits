@@ -110,11 +110,11 @@ def draw_accuracy_heat_map(predictions, graph_name):
 
 if __name__ == "__main__":
 
-    training_size = 4000
-    testing_size = 500
+    training_size = 20000
+    testing_size = 1000
 
-    testing_start = 100
-    validation_start = 600
+    testing_start = 0
+    validation_start = 1000
 
     # Training features dict
     training_features = load_features('train-images-idx3-ubyte.gz', training_size)
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     testing_error = []
 
     # Loop for training
-    for i in range(0, 0):
+    for i in range(0, 10):
         print '------------------------'
         print 'RUN: ', i + 1
         print '------------------------'
